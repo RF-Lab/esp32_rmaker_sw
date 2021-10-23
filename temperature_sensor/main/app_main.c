@@ -7,6 +7,8 @@
    CONDITIONS OF ANY KIND, either express or implied.
 */
 
+// DHT drivers is here: https://github.com/UncleRus/esp-idf-lib
+
 #include <string.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
@@ -23,16 +25,20 @@
 
 static const char *TAG = "app_main";
 
-#define TEMP_SENSOR_TAG     "Температура"
-#define ROOM_POWER_TAG      "Комната"
-#define KITCHEN_POWER_TAG   "Кухня"
-#define SECOND_FL_POWER_TAG "Второй этаж"
+#define TEMP_SENSOR_TAG         "Температура"
+#define ROOM_POWER_TAG          "Комната"
+#define KITCHEN_POWER_TAG       "Кухня"
+#define SECOND_FL_POWER_TAG     "Второй этаж"
+#define SMALL_ROOM_POWER_TAG    "Маленькая комната"
+#define TERASSE_POWER_TAG       "Терасса"
 
 
 esp_rmaker_device_t *temp_sensor_device ;
 esp_rmaker_device_t *room_power_device ;
 esp_rmaker_device_t *kitchen_power_device ;
 esp_rmaker_device_t *floor2_power_device ;
+esp_rmaker_device_t *small_room_power_device ;
+esp_rmaker_device_t *terasse_power_device ;
 
 /* Callback to handle commands received from the RainMaker cloud */
 static esp_err_t write_cb(const esp_rmaker_device_t *device, const esp_rmaker_param_t *param,
@@ -43,22 +49,24 @@ static esp_err_t write_cb(const esp_rmaker_device_t *device, const esp_rmaker_pa
     ESP_LOGI(TAG, "write_cb: device_name=[%s] param_name=[%s] val.val.b=[%d]", device_name, param_name, val.val.b ) ;
     if (strcmp(device_name, ROOM_POWER_TAG ) == 0) 
     {
-        ESP_LOGI(TAG, "Received value = [%s] for dev:[%s], param:[%s]\n",
-                val.val.b? "true" : "false", device_name, param_name) ;
-        //gpio_set_level(GPIO_LED, (val.val.b)?1:0 ) ;
+        gpio_set_level(GPIO_LED, (val.val.b)?1:0 ) ;
         gpio_set_level(GPIO_ROOM_PIN, (val.val.b)?1:0 ) ;                        
     } 
     else if (strcmp(device_name, KITCHEN_POWER_TAG ) == 0)
     {
-        ESP_LOGI(TAG, "Received value = [%s] for dev:[%s], param:[%s]\n",
-                val.val.b? "true" : "false", device_name, param_name) ;
         gpio_set_level(GPIO_KITCHEN_PIN, (val.val.b)?1:0 ) ;
     }
     else if (strcmp(device_name, SECOND_FL_POWER_TAG ) == 0)
     {
-        ESP_LOGI(TAG, "Received value = [%s] for dev:[%s], param:[%s]\n",
-                val.val.b? "true" : "false", device_name, param_name) ;
         gpio_set_level(GPIO_FLOOR2_PIN, (val.val.b)?1:0 ) ;
+    }
+    else if (strcmp(device_name, SMALL_ROOM_POWER_TAG ) == 0)
+    {
+        gpio_set_level(GPIO_SMALL_ROOM_PIN, (val.val.b)?1:0 ) ;
+    }
+    else if (strcmp(device_name, TERASSE_POWER_TAG ) == 0)
+    {
+        gpio_set_level(GPIO_TERASSE_PIN, (val.val.b)?1:0 ) ;
     }
     else
     {
@@ -96,7 +104,7 @@ void app_main()
     esp_rmaker_config_t rainmaker_cfg = {
         .enable_time_sync = false,
     };
-    esp_rmaker_node_t *node = esp_rmaker_node_init(&rainmaker_cfg, "ESP RainMaker Device", "Temperature Sensor and power control") ;
+    esp_rmaker_node_t *node = esp_rmaker_node_init(&rainmaker_cfg, "Главный контроллер", "ВРУ") ;
     if (!node) 
     {
         ESP_LOGE(TAG, "Could not initialise node. Aborting!!!") ;
@@ -120,6 +128,14 @@ void app_main()
     floor2_power_device = esp_rmaker_switch_device_create(SECOND_FL_POWER_TAG, NULL, false ) ;
     esp_rmaker_device_add_cb(floor2_power_device, write_cb, NULL) ;
     esp_rmaker_node_add_device(node, floor2_power_device ) ;
+
+    small_room_power_device = esp_rmaker_switch_device_create(SMALL_ROOM_POWER_TAG, NULL, false ) ;
+    esp_rmaker_device_add_cb(small_room_power_device, write_cb, NULL) ;
+    esp_rmaker_node_add_device(node, small_room_power_device ) ;
+
+    terasse_power_device = esp_rmaker_switch_device_create(TERASSE_POWER_TAG, NULL, false ) ;
+    esp_rmaker_device_add_cb(terasse_power_device, write_cb, NULL) ;
+    esp_rmaker_node_add_device(node, terasse_power_device ) ;
 
     /* Start the ESP RainMaker Agent */
     esp_rmaker_start() ;

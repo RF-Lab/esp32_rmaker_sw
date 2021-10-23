@@ -116,13 +116,17 @@ void app_driver_init()
 
     app_sensor_init() ;
 
+    /*
     app_reset_button_register(app_reset_button_create(BUTTON_GPIO, BUTTON_ACTIVE_LEVEL),
                 WIFI_RESET_BUTTON_TIMEOUT, FACTORY_RESET_BUTTON_TIMEOUT) ;
+                */
 
-    //gpio_set_direction( GPIO_LED,      GPIO_MODE_OUTPUT ) ;
+    gpio_set_direction( GPIO_LED,      GPIO_MODE_OUTPUT ) ;
 
     gpio_set_direction( GPIO_ROOM_PIN,      GPIO_MODE_OUTPUT ) ;
     gpio_set_direction( GPIO_KITCHEN_PIN,   GPIO_MODE_OUTPUT ) ;
     gpio_set_direction( GPIO_FLOOR2_PIN,    GPIO_MODE_OUTPUT ) ;
+    gpio_set_direction( GPIO_SMALL_ROOM_PIN,  GPIO_MODE_OUTPUT ) ;
+    gpio_set_direction( GPIO_TERASSE_PIN,    GPIO_MODE_OUTPUT ) ;
 
 }
