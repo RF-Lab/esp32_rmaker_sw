@@ -1,0 +1,10 @@
+menu "Sensors configuration"
+
+    config TEMP_SENSOR_GPIO
+        int "Temperature Sensor GPIO"
+        default 4
+        help
+            Temperature Sensor GPIO.
+
+endmenu
+
