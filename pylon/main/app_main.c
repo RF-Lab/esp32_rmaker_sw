@@ -95,6 +95,9 @@ void app_main()
     /* Initialize Wi-Fi. Note that, this should be called before esp_rmaker_init()
      */
     app_wifi_init() ;
+
+#if 0
+
     
     /* Initialize the ESP RainMaker Agent.
      * Note that this should be called after app_wifi_init() but before app_wifi_start()
@@ -111,8 +114,8 @@ void app_main()
     }
 
     /* Create a device and add the relevant parameters to it */
-    temp_sensor_device = temp_sensor_device_create_with_ts(TEMP_SENSOR_TAG, NULL, app_get_current_temperature()) ;
-    esp_rmaker_node_add_device(node, temp_sensor_device) ;
+    // temp_sensor_device = temp_sensor_device_create_with_ts(TEMP_SENSOR_TAG, NULL, app_get_current_temperature()) ;
+    // esp_rmaker_node_add_device(node, temp_sensor_device) ;
 
     rssi_monitor_device = esp_rmaker_temp_sensor_device_create(RSSI_MONITOR_TAG, NULL, 0 ) ;
     esp_rmaker_node_add_device(node, rssi_monitor_device) ;
@@ -140,4 +143,5 @@ void app_main()
         vTaskDelay(5000/portTICK_PERIOD_MS) ;
         abort() ;
     }
+#endif
 }

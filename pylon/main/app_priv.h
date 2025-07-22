@@ -15,6 +15,8 @@
 
 extern esp_rmaker_device_t *temp_sensor_device ;
 extern esp_rmaker_device_t *rssi_monitor_device ;
+extern esp_rmaker_device_t *water_pump_device ;
+
 
 void app_driver_init(void) ;
 float app_get_current_temperature() ;
