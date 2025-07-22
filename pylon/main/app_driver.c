@@ -150,6 +150,9 @@ int pump_state = false ;
 
 IRAM_ATTR void btn_task( void* pvParameter )
 {
+    TimeOut_t xTimeOut ;
+    TickType_t xTicksToWait = pdMS_TO_TICKS(20000) ;
+
     ESP_LOGI(TAG,"btn_task started at CpuCore%1d\n", xPortGetCoreID() ) ;
     // Continuous capture the data
     for( ;; )
@@ -164,9 +167,9 @@ IRAM_ATTR void btn_task( void* pvParameter )
             vTaskDelay( pdMS_TO_TICKS( 100 ) ) ;
             if (gpio_get_level(POST_BUTTON_OFF)==0)
             {
-                esp_rmaker_param_update_and_report(
-                        esp_rmaker_device_get_param_by_type(water_pump_device, ESP_RMAKER_DEVICE_SWITCH),
-                        esp_rmaker_bool(false)) ;
+                // esp_rmaker_param_update_and_report(
+                //         esp_rmaker_device_get_param_by_type(water_pump_device, ESP_RMAKER_DEVICE_SWITCH),
+                //         esp_rmaker_bool(false)) ;
                 ESP_LOGI(TAG,"btn_task: POST_BUTTON_OFF updated\n" ) ;
                 pump_state = false ;
             }
@@ -178,29 +181,38 @@ IRAM_ATTR void btn_task( void* pvParameter )
             vTaskDelay( pdMS_TO_TICKS( 100 ) ) ;
             if (gpio_get_level(POST_BUTTON_ON)==0)
             {                
-                esp_rmaker_param_update_and_report(
-                        esp_rmaker_device_get_param_by_type(water_pump_device, ESP_RMAKER_DEVICE_SWITCH),
-                        esp_rmaker_bool(true)) ;
+                // esp_rmaker_param_update_and_report(
+                //         esp_rmaker_device_get_param_by_type(water_pump_device, ESP_RMAKER_DEVICE_SWITCH),
+                //         esp_rmaker_bool(true)) ;                
                 ESP_LOGI(TAG,"btn_task: POST_BUTTON_ON updated\n" ) ;
                 pump_state = true ;
+                // Start measure timeout
+                vTaskSetTimeOutState( &xTimeOut ) ;
+                xTicksToWait = pdMS_TO_TICKS(20000) ;
                 // wait for user release ON button
                 for(;gpio_get_level(POST_BUTTON_ON)==0;)
                 {
-                    xSemaphoreTake( btnBinarySemaphore, pdMS_TO_TICKS(200) ) ; 
+                    xSemaphoreTake( btnBinarySemaphore, pdMS_TO_TICKS(100) ) ; 
                 }
                 // Wait for 10 sec
                 for(;;)
                 {
                     // Try to wait timout, but check for stop button
-                    xSemaphoreTake( btnBinarySemaphore, pdMS_TO_TICKS(10000) ) ;
-                    if (gpio_get_level(POST_BUTTON_ON)!=0)
+                    if (xSemaphoreTake( btnBinarySemaphore, pdMS_TO_TICKS(1000) )==pdTRUE)
                     {
+                        // If stop button pressed
+                        if (gpio_get_level(POST_BUTTON_OFF)==0)
+                        {
+                            ESP_LOGI(TAG,"btn_task: timeout cancelled (POST_BUTTON_OFF)\n" ) ;                            
+                            break ;
+                        }
+                    }
+                    if( xTaskCheckForTimeOut( &xTimeOut, &xTicksToWait ) != pdFALSE )
+                    {
+                        ESP_LOGI(TAG,"btn_task: pump timeout expired - switched off\n" ) ;
                         break ;
                     }
-                    ESP_LOGI(TAG,"btn_task: prolongation\n" ) ;
-
                 }
-                ESP_LOGI(TAG,"btn_task: pump timeout expired - switched off\n" ) ;
                 pump_state = false ;
             }
         }
