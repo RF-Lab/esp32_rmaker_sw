@@ -150,10 +150,17 @@ int pump_state = false ;
 
 IRAM_ATTR void btn_task( void* pvParameter )
 {
+    const TickType_t msToWait = 60000*5 ;
     TimeOut_t xTimeOut ;
-    TickType_t xTicksToWait = pdMS_TO_TICKS(20000) ;
+    TickType_t xTicksToWait = pdMS_TO_TICKS(msToWait) ;
 
     ESP_LOGI(TAG,"btn_task started at CpuCore%1d\n", xPortGetCoreID() ) ;
+
+    // Initialize water pump state to Off
+    pump_state = false ;
+    gpio_set_level(WATER_PUMP_PIN, (pump_state)?1:0 ) ;
+    gpio_set_level(GPIO_LED, (pump_state)?1:0 ) ;
+
     // Continuous capture the data
     for( ;; )
     {
@@ -172,6 +179,8 @@ IRAM_ATTR void btn_task( void* pvParameter )
                 //         esp_rmaker_bool(false)) ;
                 ESP_LOGI(TAG,"btn_task: POST_BUTTON_OFF updated\n" ) ;
                 pump_state = false ;
+                gpio_set_level(WATER_PUMP_PIN, (pump_state)?1:0 ) ;
+                gpio_set_level(GPIO_LED, (pump_state)?1:0 ) ;
             }
         }
         else if (gpio_get_level(POST_BUTTON_ON)==0 && !pump_state)
@@ -185,20 +194,23 @@ IRAM_ATTR void btn_task( void* pvParameter )
                 //         esp_rmaker_device_get_param_by_type(water_pump_device, ESP_RMAKER_DEVICE_SWITCH),
                 //         esp_rmaker_bool(true)) ;                
                 ESP_LOGI(TAG,"btn_task: POST_BUTTON_ON updated\n" ) ;
+                // Switch pump On
                 pump_state = true ;
+                gpio_set_level(WATER_PUMP_PIN, (pump_state)?1:0 ) ;
+                gpio_set_level(GPIO_LED, (pump_state)?1:0 ) ;
                 // Start measure timeout
                 vTaskSetTimeOutState( &xTimeOut ) ;
-                xTicksToWait = pdMS_TO_TICKS(20000) ;
+                xTicksToWait = pdMS_TO_TICKS(msToWait) ;
                 // wait for user release ON button
                 for(;gpio_get_level(POST_BUTTON_ON)==0;)
                 {
                     xSemaphoreTake( btnBinarySemaphore, pdMS_TO_TICKS(100) ) ; 
                 }
-                // Wait for 10 sec
+                // Wait for timeout
                 for(;;)
                 {
                     // Try to wait timout, but check for stop button
-                    if (xSemaphoreTake( btnBinarySemaphore, pdMS_TO_TICKS(1000) )==pdTRUE)
+                    if (xSemaphoreTake( btnBinarySemaphore, pdMS_TO_TICKS(5000) )==pdTRUE)
                     {
                         // If stop button pressed
                         if (gpio_get_level(POST_BUTTON_OFF)==0)
@@ -214,6 +226,8 @@ IRAM_ATTR void btn_task( void* pvParameter )
                     }
                 }
                 pump_state = false ;
+                gpio_set_level(WATER_PUMP_PIN, (pump_state)?1:0 ) ;
+                gpio_set_level(GPIO_LED, (pump_state)?1:0 ) ;
             }
         }
     }
