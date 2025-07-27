@@ -159,20 +159,20 @@ IRAM_ATTR void btn_task( void* pvParameter )
     // Initialize water pump state to Off
     pump_state = false ;
     gpio_set_level(WATER_PUMP_PIN, (pump_state)?1:0 ) ;
-    gpio_set_level(GPIO_LED, (pump_state)?1:0 ) ;
+    //gpio_set_level(GPIO_LED, (pump_state)?1:0 ) ;
 
     // Continuous capture the data
     for( ;; )
     {
         xSemaphoreTake( btnBinarySemaphore, portMAX_DELAY ) ;
-        ESP_LOGI(TAG,"btn_task: got btnBinarySemaphore\n" ) ;
+        //ESP_LOGI(TAG,"btn_task: got btnBinarySemaphore\n" ) ;
         // check for off button
-        if (gpio_get_level(POST_BUTTON_OFF)==0 && pump_state)
+        if (gpio_get_level(POST_BUTTON_OFF)==1 && pump_state)
         {
             ESP_LOGI(TAG,"btn_task: got POST_BUTTON_OFF\n" ) ;
             // Debounce
             vTaskDelay( pdMS_TO_TICKS( 100 ) ) ;
-            if (gpio_get_level(POST_BUTTON_OFF)==0)
+            if (gpio_get_level(POST_BUTTON_OFF)==1)
             {
                 // esp_rmaker_param_update_and_report(
                 //         esp_rmaker_device_get_param_by_type(water_pump_device, ESP_RMAKER_DEVICE_SWITCH),
@@ -180,7 +180,7 @@ IRAM_ATTR void btn_task( void* pvParameter )
                 ESP_LOGI(TAG,"btn_task: POST_BUTTON_OFF updated\n" ) ;
                 pump_state = false ;
                 gpio_set_level(WATER_PUMP_PIN, (pump_state)?1:0 ) ;
-                gpio_set_level(GPIO_LED, (pump_state)?1:0 ) ;
+                //gpio_set_level(GPIO_LED, (pump_state)?1:0 ) ;
             }
         }
         else if (gpio_get_level(POST_BUTTON_ON)==0 && !pump_state)
@@ -197,7 +197,7 @@ IRAM_ATTR void btn_task( void* pvParameter )
                 // Switch pump On
                 pump_state = true ;
                 gpio_set_level(WATER_PUMP_PIN, (pump_state)?1:0 ) ;
-                gpio_set_level(GPIO_LED, (pump_state)?1:0 ) ;
+                //gpio_set_level(GPIO_LED, (pump_state)?1:0 ) ;
                 // Start measure timeout
                 vTaskSetTimeOutState( &xTimeOut ) ;
                 xTicksToWait = pdMS_TO_TICKS(msToWait) ;
@@ -213,10 +213,14 @@ IRAM_ATTR void btn_task( void* pvParameter )
                     if (xSemaphoreTake( btnBinarySemaphore, pdMS_TO_TICKS(5000) )==pdTRUE)
                     {
                         // If stop button pressed
-                        if (gpio_get_level(POST_BUTTON_OFF)==0)
+                        if (gpio_get_level(POST_BUTTON_OFF)==1)
                         {
-                            ESP_LOGI(TAG,"btn_task: timeout cancelled (POST_BUTTON_OFF)\n" ) ;                            
-                            break ;
+                            vTaskDelay( pdMS_TO_TICKS( 50 ) ) ;
+                            if (gpio_get_level(POST_BUTTON_OFF)==1)
+                            {
+                                ESP_LOGI(TAG,"btn_task: timeout cancelled (POST_BUTTON_OFF)\n" ) ;
+                                break ;
+                            } 
                         }
                     }
                     if( xTaskCheckForTimeOut( &xTimeOut, &xTicksToWait ) != pdFALSE )
@@ -227,7 +231,7 @@ IRAM_ATTR void btn_task( void* pvParameter )
                 }
                 pump_state = false ;
                 gpio_set_level(WATER_PUMP_PIN, (pump_state)?1:0 ) ;
-                gpio_set_level(GPIO_LED, (pump_state)?1:0 ) ;
+                //gpio_set_level(GPIO_LED, (pump_state)?1:0 ) ;
             }
         }
     }
@@ -261,7 +265,7 @@ void app_driver_init()
 
     gpio_reset_pin( POST_BUTTON_OFF ) ;
     gpio_set_direction( POST_BUTTON_OFF, GPIO_MODE_INPUT ) ;
-    gpio_set_intr_type( POST_BUTTON_OFF, GPIO_INTR_NEGEDGE ) ;
+    gpio_set_intr_type( POST_BUTTON_OFF, GPIO_INTR_POSEDGE ) ;
     gpio_intr_enable( POST_BUTTON_OFF ) ;
 
     gpio_install_isr_service(0) ;
